@@ -1,0 +1,102 @@
+---
+title: "Supplement"
+author: "Gabriel Melo-Santo & Sam Walmsley"
+execute:
+  eval: true
+format: docx
+---
+
+```{r}
+#| include: false
+source(file.path('R', 'packages.R'))
+source(file.path('R', 'functions.R'))
+
+```
+
+
+# iNEXT results: Low-frequency dataset
+
+```{r}
+#| echo: false
+#| eval: true
+iNEXT_table(tar_read(q0), tar_read(estimates), 'low')
+```
+
+
+# iNEXT results: High-frequency dataset
+
+```{r}
+#| echo: false
+#| eval: true
+iNEXT_table(tar_read(q0_high), tar_read(estimates_high), 'high')
+```
+
+
+# Model 1 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m1))
+```
+
+
+# Model 2 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m2))
+```
+
+# Model 3 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m3))
+```
+
+# Model 4 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m4))
+```
+
+# Model 5 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m5))
+```
+
+# Model 6 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m6))
+```
+
+
+# Model 7 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m7))
+```
+
+# Model 8 results
+
+```{r}
+#| echo: false
+#| eval: true
+brms_table(tar_read(m8))
+```
+
+
+
