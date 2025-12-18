@@ -25,8 +25,7 @@ View(tar_meta(targets_only = TRUE)) # simplified
 
 
 
-
-# Additional checks -------------------------------------------------------
+# Data summary for all populations ----------------------------------------
 
 # Data summary statistics: Low-frequency dataset
 l <- tar_read(data_low)
@@ -48,6 +47,29 @@ median(l2[numPopsPerCat>1,unique(numPopsPerCat),by=finalcategory]$V1) # 27 produ
 h <- tar_read(data_high) # 1921 whistles
 h[,length(unique(population)),] # 14 populations
 
+
+
+# Data summary for marine analysis ----------------------------------------
+
+# Data summary statistics: Low-frequency dataset
+l <- tar_read(marine_data_low)
+l[,.N,] # 1817 whistles
+l[,length(unique(finalcategory)),] # 206
+l[,numWhistlesPerCat:=.N,by=finalcategory]
+l[numWhistlesPerCat==1,.N,] # 120
+l2 <- l[numWhistlesPerCat>1,,]
+l2[,.N,] # 1662 whistles
+l2[,length(unique(finalcategory)),] # 86 categories
+range(l2[,unique(numWhistlesPerCat),by='finalcategory']$V1) # of 2plus, 2 to 92 whistles per category
+median(l2[,unique(numWhistlesPerCat),by='finalcategory']$V1) # of 2plus, median 5 whistles per category
+l2[,numPopsPerCat:=length(unique(population)),by='finalcategory']
+l2[numPopsPerCat==1,length(unique(finalcategory)),] # 18 produced by a single population
+range(l2[numPopsPerCat>1,unique(numPopsPerCat),by=finalcategory]$V1) # 2 to 11 populations
+median(l2[numPopsPerCat>1,unique(numPopsPerCat),by=finalcategory]$V1) # 27 produced by a single population
+
+# Data summary statistics: High-frequency dataset
+h <- tar_read(marine_data_high) # 1921 whistles
+h[,length(unique(population)),] # 14 populations
 
 
 

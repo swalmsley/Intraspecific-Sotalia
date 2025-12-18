@@ -19,11 +19,11 @@ process_data <- function(data, whistleData, subset){
   
   # insert abbreviations for populations
   population_codes <- c('CA', 'CO', 'EC', 'JU', 'CR', 'FG', 'IG', 'PA', 'PE', 'PR', 'RN', 'SC', 'SE', 'SP', 'TO', 'VZ')
-  geographical_locations <- c('Central Amazon', 'Colombian Amazon', 'Ecuador', 'Jurua', 'Cost Rica', 'French Guiana', 
+  geographical_locations <- c('Central Amazon', 'Colombian Amazon', 'Ecuador', 'Jurua', 'Costa Rica', 'French Guiana', 
                               'Ilha Grande', 'Para', 'Peru', 'Parana', 'Rio Grande do Norte', 'Santa Catarina', 
                               'Sepetiba', 'Sao Paulo', 'Tocantins', 'Venezuela')
   for (i in 1:length(population_codes)) {
-    data[Geograhical.location == geographical_locations[i], pop := population_codes[i], ]
+    data[Geographical.location == geographical_locations[i], pop := population_codes[i], ]
   }
   data[,population:=pop,]
   data[,pop:=NULL,]
@@ -43,7 +43,9 @@ process_data <- function(data, whistleData, subset){
   return(data)
   
 }
-# testing
+# data <- tar_read(marine_raw)
+# whistleData <- tar_read(whistles)
+# subset <- 'low'
 
 
 # Build spadeR data -------------------------------------------------------
@@ -64,6 +66,8 @@ build_spadeR_data <- function(data) {
   }
   return(abundMatrix)
 }
+# data <- tar_read(marine_data_low)
+
 
 
 # Run permutation test ----------------------------------------------------
@@ -132,6 +136,11 @@ run_mantel <- function(geographic_distances, spade_input, spade_output, diversit
   return(mtest)
   
 }
+# geographic_distances <- tar_read(geo_distances)
+# spade_input <- tar_read(spadeData)
+# spade_output <- tar_read(spadeQ1)
+# diversityMeasure <- 'horn'
+
 
 
 # Run NMDS ----------------------------------------------------------------
@@ -149,6 +158,10 @@ run_NMDS <- function(spade_input, spade_output, diversityMeasure) {
   return(nmds)
   
 }
+# spade_input <- tar_read(spadeData)
+# spade_output <- tar_read(spadeQ1)
+# diversityMeasure <- 'horn'
+
 
 
 # Plot NMDS ---------------------------------------------------------------
@@ -177,6 +190,42 @@ plot_nmds <- function(spade_input, fitted_nmds, plot_title) {
   g
   
 }
+# spade_input <- tar_read(spadeData)
+# fitted_nmds <- tar_read(nmds.horn)
+# plot_title <- 'Horn'
+
+
+
+# Plot NMDS - single species ----------------------------------------------
+plot_nmds_oneSpecies <- function(spade_input, fitted_nmds, plot_title) {
+    
+  data.scores <- data.table(scores(fitted_nmds), colnames(spade_input))
+  data.scores$grp <- rep('SG',10)
+  
+  # grp.a <- data.scores[data.scores$grp == "SF", ][chull(data.scores[data.scores$grp == "SG", c("NMDS1", "NMDS2")]), ]  # hull values for grp A
+  # grp.b <- data.scores[data.scores$grp == "SG", ][chull(data.scores[data.scores$grp == "SF", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+  hull.data <- data.scores
+  
+  # Create ggplot
+  g <- ggplot(data.scores, aes(x = NMDS1, y = NMDS2)) +
+    #geom_point(aes(color = grp),size=1,shape=3,alpha=0.2) +
+    geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=V2),size=6,vjust=0) +  # add the site labels
+    geom_mark_hull(expand=0,radius=0,alpha=0.1,linetype='dashed', fill='blue')+
+    # scale_color_manual(values=c(trait_colors[1],trait_colors[2],trait_colors[3])) +
+    # scale_fill_manual(name='Species',values=c(trait_colors[1],trait_colors[2],trait_colors[3]),labels=c('Tucuxi', 'Guiana dolphin', 'Unknown')) +
+    labs(x='NMDS 1', y='NDMS 2') +
+    ggtitle(paste(plot_title)) + 
+    theme_minimal() +
+    theme(plot.title = element_text(size = 16), panel.grid.minor=element_blank(), panel.grid.major=element_blank(),
+          plot.margin = unit(c(0.5,0.5,0.5,0.5), "cm"))
+  g
+  
+}
+# spade_input <- tar_read(spadeData)
+# fitted_nmds <- tar_read(nmds.horn)
+# plot_title <- 'Horn'
+
+
 
 
 # Format for iNext --------------------------------------------------------
@@ -238,14 +287,35 @@ plot_REEX <- function(output, q, curve_type) {
 
   g <- ggiNEXT(output, type=curve_type, se = FALSE) +
     scale_shape_manual(values=rep(20, each = 16)) +
-    scale_color_manual(values=species_colors) +
+    scale_color_viridis(discrete=TRUE, option='A', begin=0, end=0.9) +
     #scale_fill_manual(values=species_colors) +
     labs(x='Number of whistles analysed', y=ylabs[q+1]) +
     guides(color='none', shape='none', linetype='none') +
-    scale_linewidth_manual(values = 0.25)+
     theme_minimal()
+  
+  # Extract plot data
+  d <- as.data.table(g$data)
+  
+  # One row per assemblage: last point on each curve
+  d_lab <- d[
+    , .SD[which.max(x)],
+    by = Assemblage
+  ]
+  
+  g +
+    geom_text(
+      data = d_lab,
+      aes(x = x, y = y, label = Assemblage, color = Assemblage),
+      hjust = -0.1,
+      size = 3,
+      show.legend = FALSE
+    ) +
+    coord_cartesian(clip = "off")
 
 }
+# output <- tar_read(q0)
+# q <- 0
+# curve_type <- 1
 
 
 # Custom legend -----------------------------------------------------------
@@ -422,11 +492,54 @@ iNEXT_table <- function(q0_result, result_at_cmax, data_subset) {
   order[,position:=.I,]
   table <- merge(d, order)
   table <- table[order(position), ]
+  
+  return(nice_table(table[,1:7]))
+  
+}
+# q0_result <- tar_read(q0)
+# result_at_cmax <- tar_read(estimates)
+# data_subset <- 'low'
+
+
+
+
+# iNEXT output table ------------------------------------------------------
+iNEXT_table_marine_only <- function(q0_result, result_at_cmax, data_subset) {
+  
+  # start with populations, alphabetical for now
+  if (data_subset=="low") (d <- data.table(Assemblage=c('CR','FG','IG','PA','PR','RN','SC','SE','SP','VZ')))
+  if (data_subset=="high") (d <- data.table(Assemblage=c('CR','FG','IG','PA','PR','RN','SC','SE','SP')))
+  
+  # organize asymptotic estimates
+  asymptotic_ests <- data.table(q0_result$AsyEst)
+  a_q0 <- asymptotic_ests[Diversity=="Species richness"]
+  a_q1 <- asymptotic_ests[Diversity=="Shannon diversity"]
+  a_q2 <- asymptotic_ests[Diversity=="Simpson diversity"]
+  
+  # add asymptotic estimates
+  d[,asy_0:=a_q0[,round(Estimator),]]
+  d[,asy_1:=a_q1[,round(Estimator),]]
+  d[,asy_2:=a_q2[,round(Estimator),]]
+  
+  # add repertoire sizes at cmax
+  d[,cmax_q0:=result_at_cmax[Order.q==0,round(qD),]]
+  d[,cmax_q1:=result_at_cmax[Order.q==1,round(qD),]]
+  d[,cmax_q2:=result_at_cmax[Order.q==2,round(qD),]]
+  
+  # re-order based on species and alphabet for printed table
+  if (data_subset=="low") (order <- data.table(Assemblage=c('CR','FG','IG','PA','PR','RN','SC','SE','SP','VZ')))
+  if (data_subset=="high") (order <- data.table(Assemblage=c('CR','FG','IG','PA','PR','RN','SC','SE','SP')))
+  
+  order[,position:=.I,]
+  table <- merge(d, order)
+  table <- table[order(position), ]
 
   return(nice_table(table[,1:7]))
   
 }
-
+# q0_result <- tar_read(q0)
+# result_at_cmax <- tar_read(estimates)
+# data_subset <- 'low'
 
 
 
